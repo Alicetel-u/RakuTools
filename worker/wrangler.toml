@@ -1,0 +1,6 @@
+name = "rakutools-upload"
+main = "src/index.js"
+compatibility_date = "2026-11-19"
+
+[vars]
+ALLOWED_ORIGINS = "https://alicetel-u.github.io"

@@ -1,6 +1,22 @@
 name = "rakutools-upload"
-main = "src/index.js"
+main = "src/entry.js"
 compatibility_date = "2026-11-19"
+workers_dev = true
 
 [vars]
 ALLOWED_ORIGINS = "https://alicetel-u.github.io"
+# Confirm integration permission before enabling. All security bindings are mandatory.
+INTEGRATION_APPROVED = "false"
+TURNSTILE_SITE_KEY = ""
+
+[[durable_objects.bindings]]
+name = "SESSIONS"
+class_name = "UploadSession"
+
+[[durable_objects.bindings]]
+name = "QUOTAS"
+class_name = "Quotas"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["UploadSession", "Quotas"]

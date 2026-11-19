@@ -1,31 +1,47 @@
 # RakuTools — らくらくギガファイル便
 
-初心者でも使いやすいファイル共有ツールです。
+**状態：Web画面は公開準備済み。アップロードサービスは未完成・停止中です。**
 
-## 実装状況
+公開URL: https://alicetel-u.github.io/RakuTools/
 
-- ファイル選択 / ドラッグ＆ドロップ / 複数ファイル
-- 保存期間選択（7・30・60・100日）
-- 分割アップロード、進捗表示、共有URL取得・コピー、削除キー表示
-- スマートフォン対応
-- GitHub Pagesの画面とCloudflare Workersの送信APIを分離
+2026-11-19の調査では、ギガファイル便の公開ブラウザ用エンドポイントに、小さな無害なテキストを1回送信し、共有URL発行・通常のセッションCookieを使ったダウンロード・内容一致・検証ファイルの削除まで確認しました。これはRakuTools本番経由の検証ではありません。公開API文書と第三者サービスへの組み込み許諾は確認できていません。禁止されていると断定するものでもありません。
 
-**重要：ギガファイル便への実際のアップロード成功は未検証です。** これはギガファイル便の非公式連携です。公開APIの互換性保証はありません。外部への一般公開前に、仕様・利用条件・負荷・悪用対策について確認してください。
+本番WorkerのCloudflare認証・Turnstile設定がなく、公開サービスとしての連携条件も未確認のため、送信は初期状態で停止しています。画面でファイルを選んでも外部へ送信されません。公式サイトでユーザーに操作させる転送方式は採用していません。
 
-## 公開設定
+- [調査結果・検証範囲](docs/AUDIT.md)
+- [本番公開・残作業](docs/DEPLOYMENT.md)
 
-GitHub Pagesだけでは直接アップロードできません。Cloudflare Workerを別途公開する必要があります。
+## ローカル開発
 
-1. Cloudflareのアカウントで `npx wrangler login`
-2. `cd worker && npx wrangler deploy`
-3. 返されたWorkersのURL（例：`https://rakutools-upload.example.workers.dev`）をルートの `config.js` に設定：`window.RAKUTOOLS_API_BASE = 'https://...workers.dev';`
-4. commit & pushすると GitHub Pages が自動更新されます。
-5. 小さなテストファイルで送信・URL取得・実ダウンロードを検証してください。
+Node.js 24で実施しています。
 
-公開ページはGitHub Pagesが有効な場合 `https://alicetel-u.github.io/RakuTools/` です。
+```sh
+npm ci
+npm test
+npm run test:runtime
+npm run build
+npm run dev
+```
 
-### プライバシーと制限
+画面: `http://127.0.0.1:4173`。実ランタイム試験はCloudflare公式workerdを起動します。Windowsで権限エラーになる場合は、実行環境の権限を確認するかGitHub ActionsのLinux試験を利用してください。
 
-ファイルはブラウザからCloudflare Workerを経由してギガファイル便へ送られます。RakuTools側に永続保存しませんが、Cloudflareが中継します。Workerはギガファイル便のホストのみへ転送し、1チャンク12MiB以下に制限します。Cloudflareの利用料金・リクエスト制限が別途適用されます。
+## 構造
 
-**現状のWorkerは一般公開用の濫用対策が十分ではありません。** 公開運用前にTurnstile、送信レート制限、日次上限、監視、運営会社への確認などが必要です。未公開の送信仕様に依存しているため、将来動かなくなる可能性があります。
+- `index.html` / `assets/style.css`: 画面・レスポンシブデザイン
+- `assets/app.js`: 画面の状態、ファイル選択、結果・コピー
+- `assets/upload.js`: 分割送信・XMLHttpRequestの送信進捗・サイズ検査
+- `config.js`: 公開してよいAPI URLのみ。秘密情報を置かない
+- `worker/src/entry.js`: Cloudflare用エントリーポイント
+- `worker/src/index.js`: 連携アダプター、セッション認証、利用量制限
+- `tests/`: 正常系・異常系・実ランタイム起動試験
+- `scripts/build.mjs`: 公開ファイルだけを`dist/`へコピー
+
+他の便利ツールは独立した画面・モジュールとして追加できます。送信ロジックは画面から分離しています。複数ツール用の基盤・ナビゲーションは、実際に次のツールを追加する段階で拡張してください。
+
+## 公開・セキュリティ
+
+mainへのpushでテスト後にGitHub Pagesへ自動公開します。Workerは別ワークフローで、リポジトリ変数`RAKUTOOLS_DEPLOY_WORKER=true`のときだけ公開します。未設定時はスキップします。
+
+CORSは認証ではありません。実装はTurnstileのサーバー検証、接続元ハッシュに結びついたランダムなセッション認証、永続化したチャンク順序・日次上限を併用します。連携許可フラグや安全設定が不足した状態では503で拒否します。
+
+**10 GiBは実装上の上限であり、大容量での動作保証ではありません。** 本番での小容量・分割・大容量・スマートフォンの実機試験が完了するまで、アップロード機能を完成と扱わないでください。

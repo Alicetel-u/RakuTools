@@ -1,23 +1,31 @@
-# RakuTools
+# RakuTools — らくらくギガファイル便
 
-初心者でも迷わず使える、シンプルで親しみやすい便利ツール集。
+初心者でも使いやすいファイル共有ツールです。
 
-## らくらくギガファイル便
+## 実装状況
 
-ファイルを選ぶと名前とサイズを確認でき、ギガファイル便の公式サイトへの案内と共有リンクのコピーを一画面にまとめた非公式サポートページです。
+- ファイル選択 / ドラッグ＆ドロップ / 複数ファイル
+- 保存期間選択（7・30・60・100日）
+- 分割アップロード、進捗表示、共有URL取得・コピー、削除キー表示
+- スマートフォン対応
+- GitHub Pagesの画面とCloudflare Workersの送信APIを分離
 
-**重要:** 現時点でギガファイル便への直接アップロードには対応していません。公式サイトでファイルを選択し直してアップロードする必要があります。RakuTools自体はファイルをサーバーに送信・保存しません。ギガファイル便とは無関係の非公式サービスです。
+**重要：ギガファイル便への実際のアップロード成功は未検証です。** これはギガファイル便の非公式連携です。公開APIの互換性保証はありません。外部への一般公開前に、仕様・利用条件・負荷・悪用対策について確認してください。
 
-## 公開
+## 公開設定
 
-GitHub Actions で GitHub Pages に自動デプロイする設定済みです。Actions の実行が成功すれば、公開先は通常 https://alicetel-u.github.io/RakuTools/ です。
+GitHub Pagesだけでは直接アップロードできません。Cloudflare Workerを別途公開する必要があります。
 
-初回実行で Pages が有効化できなかった場合は、GitHub の **Settings → Pages → Build and deployment → Source** から **GitHub Actions** を選んで再実行してください。
+1. Cloudflareのアカウントで `npx wrangler login`
+2. `cd worker && npx wrangler deploy`
+3. 返されたWorkersのURL（例：`https://rakutools-upload.example.workers.dev`）をルートの `config.js` に設定：`window.RAKUTOOLS_API_BASE = 'https://...workers.dev';`
+4. commit & pushすると GitHub Pages が自動更新されます。
+5. 小さなテストファイルで送信・URL取得・実ダウンロードを検証してください。
 
-## 技術
+公開ページはGitHub Pagesが有効な場合 `https://alicetel-u.github.io/RakuTools/` です。
 
-HTML / CSS / JavaScript の静的構成。ビルドやサーバー、APIキーは不要です。
+### プライバシーと制限
 
-## 今後
+ファイルはブラウザからCloudflare Workerを経由してギガファイル便へ送られます。RakuTools側に永続保存しませんが、Cloudflareが中継します。Workerはギガファイル便のホストのみへ転送し、1チャンク12MiB以下に制限します。Cloudflareの利用料金・リクエスト制限が別途適用されます。
 
-公式に認められた外部連携手段が確認できた場合にのみ、直接アップロード機能を検討します。
+**現状のWorkerは一般公開用の濫用対策が十分ではありません。** 公開運用前にTurnstile、送信レート制限、日次上限、監視、運営会社への確認などが必要です。未公開の送信仕様に依存しているため、将来動かなくなる可能性があります。
